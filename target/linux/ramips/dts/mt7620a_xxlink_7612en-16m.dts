@@ -1,0 +1,78 @@
+#include "mt7620a.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+    compatible = "xxlink,7612en-v1.3", "ralink,mt7620a-soc";
+    model = "Xx-Link MT7612EN v1.3 (16MB)";
+
+    chosen {
+        bootargs = "console=ttyS1,57600"; /* 匹配你的串口 */
+    };
+
+    leds {
+        compatible = "gpio-leds";
+        sys {
+            label = "green:sys";
+            gpios = <&gpio1 12 GPIO_ACTIVE_LOW>; /* 根据实际调整，不对也不影响启动 */
+        };
+    };
+
+    keys {
+        compatible = "gpio-keys";
+        reset {
+            label = "reset";
+            gpios = <&gpio1 13 GPIO_ACTIVE_LOW>;
+            linux,code = <KEY_RESTART>;
+        };
+    };
+};
+
+&spi0 {
+    status = "okay";
+    flash@0 {
+        compatible = "jedec,spi-nor";
+        reg = <0>;
+        spi-max-frequency = <10000000>;
+        partitions {
+            compatible = "fixed-partitions";
+            #address-cells = <1>;
+            #size-cells = <1>;
+            partition@0 {
+                label = "u-boot";
+                reg = <0x0 0x30000>;
+                read-only;
+            };
+            partition@30000 {
+                label = "u-boot-env";
+                reg = <0x30000 0x10000>;
+            };
+            factory: partition@40000 {
+                label = "factory";
+                reg = <0x40000 0x10000>;
+                read-only;
+            };
+            partition@50000 {
+                compatible = "denx,uimage";
+                label = "firmware";
+                reg = <0x50000 0xFB0000>; /* 16MB 闪存专用 */
+            };
+        };
+    };
+};
+
+&pcie {
+    status = "okay";
+};
+&pcie0 {
+    wifi@0,0 {
+        compatible = "mediatek,mt76";
+        mediatek,mtd-eeprom = <&factory 0x0>;
+    };
+};
+&pcie1 {
+    wifi@0,0 {
+        compatible = "mediatek,mt76";
+        mediatek,mtd-eeprom = <&factory 0x8000>; /* 5G WiFi 校准 */
+    };
+};
